@@ -1,0 +1,2 @@
+npm install @vuepic/vue-datepicker
+npm install chart.js chartjs-adapter-date-fns
