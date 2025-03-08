@@ -1,8 +1,7 @@
 import paho.mqtt.client as mqtt
 import json
 from sqlalchemy import create_engine, Column, Integer, Float, String, DateTime
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import declarative_base, sessionmaker
 from datetime import datetime
 
 # MQTT broker details
@@ -71,8 +70,8 @@ def on_message(client, userdata, message):
         print(f"Error processing message: {e}")
 
 def run_subscriber():
-    # Create MQTT client
-    client = mqtt.Client()
+    # Create MQTT client with protocol version explicitly set to avoid deprecation warning
+    client = mqtt.Client(protocol=mqtt.MQTTv5)
 
     # Assign event callbacks
     client.on_connect = on_connect

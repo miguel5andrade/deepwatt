@@ -1,0 +1,49 @@
+version: '3'
+
+services:
+  # Backend API service
+  api:
+    build: ./backend
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend:/app
+      - ./backend/instance:/app/instance
+    environment:
+      - FLASK_ENV=development
+    networks:
+      - deepwatt-network
+    restart: unless-stopped
+
+  # Subscriber service
+  subscriber:
+    build: ./backend
+    command: python subscriber.py
+    volumes:
+      - ./backend:/app
+      - ./backend/instance:/app/instance
+    networks:
+      - deepwatt-network
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  # Frontend service
+  frontend:
+    build: ./frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+    networks:
+      - deepwatt-network
+    depends_on:
+      - api
+    restart: unless-stopped
+
+networks:
+  deepwatt-network:
+    driver: bridge
