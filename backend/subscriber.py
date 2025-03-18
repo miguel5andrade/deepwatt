@@ -3,6 +3,7 @@ import json
 from sqlalchemy import create_engine, Column, Integer, Float, String, DateTime
 from sqlalchemy.orm import declarative_base, sessionmaker
 from datetime import datetime
+import time
 
 # MQTT broker details
 broker_address = "test.mosquitto.org"
@@ -41,7 +42,6 @@ def on_connect(client, userdata, flags, rc, properties=None):
 def on_message(client, userdata, message):
     try:
         payload = message.payload
-        print("payload: "+ str(payload))
         device_id = message.topic[9:]  # extracts device id from the topic
         received = json.loads(payload)
         print(received)
@@ -70,6 +70,19 @@ def on_message(client, userdata, message):
     except Exception as e:
         print(f"Error processing message: {e}")
 
+def on_disconnect(client, userdata, rc):
+    print(f"Disconnected from broker, with code {rc}...")
+    #retry to connect
+    while(1):
+        try:
+            client.reconnect()
+            print("Reconnected successfully!")
+            return
+        except Exception as err:
+            print("%s. Reconnect failed. Retrying...", err)
+        time.sleep(1)
+
+
 def run_subscriber():
     # Create MQTT client with proper settings for MQTTv5
     client = mqtt.Client(client_id="deepwatt_subscriber", protocol=mqtt.MQTTv5, callback_api_version=mqtt.CallbackAPIVersion.VERSION2)
@@ -77,6 +90,7 @@ def run_subscriber():
     # Assign event callbacks
     client.on_connect = on_connect
     client.on_message = on_message
+    client.on_disconnect = on_disconnect
 
     # Connect to broker
     client.connect(broker_address, broker_port)
