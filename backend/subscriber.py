@@ -29,7 +29,7 @@ class DeviceReading(Base):
 Base.metadata.create_all(engine)
 
 # Callback for connection
-def on_connect(client, userdata, flags, rc):
+def on_connect(client, userdata, flags, rc, properties=None):
     if rc == 0:
         print("Connected to broker")
         # Subscribe to the topic
@@ -40,7 +40,8 @@ def on_connect(client, userdata, flags, rc):
 # Callback for message
 def on_message(client, userdata, message):
     try:
-        payload = message.payload.decode("utf-8")
+        payload = message.payload
+        print("payload: "+ str(payload))
         device_id = message.topic[9:]  # extracts device id from the topic
         received = json.loads(payload)
         print(received)
@@ -51,7 +52,7 @@ def on_message(client, userdata, message):
         try:
             reading = DeviceReading(
                 device_id=device_id,
-                rms_current=received.get('rms_current'),
+                rms_current=received.get('rmsCurrent'),
                 timestamp=received.get('timestamp'),
                 received_at = datetime.now() 
             )
@@ -70,8 +71,8 @@ def on_message(client, userdata, message):
         print(f"Error processing message: {e}")
 
 def run_subscriber():
-    # Create MQTT client with protocol version explicitly set to avoid deprecation warning
-    client = mqtt.Client(protocol=mqtt.MQTTv5)
+    # Create MQTT client with proper settings for MQTTv5
+    client = mqtt.Client(client_id="deepwatt_subscriber", protocol=mqtt.MQTTv5, callback_api_version=mqtt.CallbackAPIVersion.VERSION2)
 
     # Assign event callbacks
     client.on_connect = on_connect
