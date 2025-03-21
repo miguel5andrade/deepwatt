@@ -70,7 +70,7 @@ def on_message(client, userdata, message):
     except Exception as e:
         print(f"Error processing message: {e}")
 
-def on_disconnect(client, userdata, rc):
+def on_disconnect(client, userdata, rc, properties=None ,reasonCode=None ):
     print(f"Disconnected from broker, with code {rc}...")
     #retry to connect
     while(1):

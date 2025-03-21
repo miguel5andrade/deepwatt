@@ -689,6 +689,7 @@ export default {
           response.data.forEach((element) => {
             try {
               const time = new Date(element.timestamp * 1000);
+              console.log(time);
               const voltage = parseFloat(element.voltage) || 0;
               const current = parseFloat(element.current) || 0;
               const power = voltage * current;
