@@ -4,6 +4,9 @@ import json
 from datetime import datetime
 from flask import request
 from flask_sqlalchemy import SQLAlchemy
+import subscriber as sub
+import threading
+import time
 
 DATABASE_URL = 'sqlite:///deepwatt.db'
 
@@ -96,5 +99,22 @@ def data(device_id):
 
     return jsonify([record.to_dict() for record in data])
 
+@app.route('/realtime/<device_id>', methods=["GET"])
+def realtime_data(device_id):
+    try:
+        
+        with sub.deviceDataMutex:
+            #check if the last stored data is recent (10 sec at max)
+            if (time.time() - sub.deviceData[device_id]["timestamp"] > 10):
+                return jsonify({"error": "No data available"}), 404
+            data = sub.deviceData[device_id] 
+        return data, 200
+    
+    except:
+        return jsonify({"error": "No data available"}), 404
+
+
 if __name__ == '__main__':
+    subscriber_thread = threading.Thread(target = sub.run_subscriber)
+    subscriber_thread.start()
     app.run(debug=False, host='0.0.0.0', port=5501)

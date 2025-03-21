@@ -4,6 +4,7 @@ from sqlalchemy import create_engine, Column, Integer, Float, String, DateTime
 from sqlalchemy.orm import declarative_base, sessionmaker
 from datetime import datetime
 import time
+import threading
 
 # MQTT broker details
 broker_address = "test.mosquitto.org"
@@ -16,6 +17,8 @@ Base = declarative_base()
 engine = create_engine('sqlite:///instance/deepwatt.db')  
 Session = sessionmaker(bind=engine)
 
+deviceData = {}
+deviceDataMutex = threading.Lock()
 # Define the data model
 class DeviceReading(Base):
     __tablename__ = 'device_readings'
@@ -58,6 +61,11 @@ def on_message(client, userdata, message):
             )
             session.add(reading)
             session.commit()
+            with deviceDataMutex:
+                deviceData[device_id] = {
+                    "rms_current" : received.get('rmsCurrent'),
+                    "timestamp": received.get('timestamp')
+                }
             print(f"Data from device {device_id} stored successfully")
         except Exception as e:
             session.rollback()
@@ -85,7 +93,7 @@ def on_disconnect(client, userdata, rc, properties=None ,reasonCode=None ):
 
 def run_subscriber():
     # Create MQTT client with proper settings for MQTTv5
-    client = mqtt.Client(client_id="deepwatt_subscriber", protocol=mqtt.MQTTv5, callback_api_version=mqtt.CallbackAPIVersion.VERSION2)
+    client = mqtt.Client(client_id="deepwatt_subscriber2", protocol=mqtt.MQTTv5, callback_api_version=mqtt.CallbackAPIVersion.VERSION2)
 
     # Assign event callbacks
     client.on_connect = on_connect

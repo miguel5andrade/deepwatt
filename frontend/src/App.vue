@@ -1,50 +1,60 @@
 <template>
   <div id="app" class="dark-theme">
     <HeaderComponent />
-
-    <div class="main-page">
-      <TimePeriodSelector @selectedDate="onDateChange" />
-    </div>
-
-    <div class="container">
-      <button @click="resetZoom" class="reset-zoom-button">
-        <i class="fas fa-search-minus"></i> Reset Zoom
-      </button>
-      
-      <!-- Loading spinner -->
-      <div class="loading-overlay" v-if="isLoading">
-        <div class="spinner"></div>
-        <div class="loading-text">Loading data...</div>
-      </div>
-      
-      <!-- Power chart -->
-      <div class="chart-container" v-if="PowerData.labels.length > 0">
-        <div class="chart-wrapper">
-          <h2>Power</h2>
-          <line-chart
-            ref="powerChart"
-            :chartData="PowerData"
-            :options="PowerOptionsComputed"
-          ></line-chart>
+    
+    <!-- Default content shown on all paths except realtime -->
+    <div v-if="!$route.path.startsWith('/realtime')">
+      <div class="main-page">
+        <TimePeriodSelector @selectedDate="onDateChange" />
+        
+        <div class="action-buttons">
+          <router-link :to="'/realtime/' + macaddress" class="realtime-button">
+            <i class="fas fa-bolt"></i> Real-time Monitoring
+          </router-link>
         </div>
       </div>
 
-      <!-- Energy chart -->
-      <div class="chart-container" v-if="EnergyData.labels.length > 0">
-        <div class="chart-wrapper">
-          <h2>Energy</h2>
-          <line-chart
-            ref="energyChart"
-            :chartData="EnergyData"
-            :options="EnergyOptionsComputed"
-          ></line-chart>
+      <div class="container">
+        <button @click="resetZoom" class="reset-zoom-button">
+          <i class="fas fa-search-minus"></i> Reset Zoom
+        </button>
+        
+        <!-- Loading spinner -->
+        <div class="loading-overlay" v-if="isLoading">
+          <div class="spinner"></div>
+          <div class="loading-text">Loading data...</div>
         </div>
+        
+        <!-- Power chart -->
+        <div class="chart-container" v-if="PowerData.labels.length > 0">
+          <div class="chart-wrapper">
+            <h2>Power</h2>
+            <line-chart
+              ref="powerChart"
+              :chartData="PowerData"
+              :options="PowerOptionsComputed"
+            ></line-chart>
+          </div>
+        </div>
+
+        <!-- Energy chart -->
+        <div class="chart-container" v-if="EnergyData.labels.length > 0">
+          <div class="chart-wrapper">
+            <h2>Energy</h2>
+            <line-chart
+              ref="energyChart"
+              :chartData="EnergyData"
+              :options="EnergyOptionsComputed"
+            ></line-chart>
+          </div>
+        </div>
+
+        <div v-if="PowerData.labels.length === 0 && !isLoading" class="NoDataMessage">No data available</div>
       </div>
-
-      <div v-if="PowerData.labels.length === 0 && !isLoading" class="NoDataMessage">No data available</div>
     </div>
-
-    <footer><router-view @macaddress="onMacAddressChange" /></footer>
+    
+    <!-- Router view for real-time page -->
+    <router-view v-if="$route.path.startsWith('/realtime')" @macaddress="onMacAddressChange" />
   </div>
 </template>
 
@@ -586,6 +596,16 @@ export default {
     },
     energy_min(newVal) {
       this.EnergyOptions.scales.y.min = newVal - 1
+    },
+    // Watch for route changes to update macaddress
+    '$route'(to, from) {
+      if (to.params.macaddress && to.params.macaddress !== this.macaddress) {
+        this.macaddress = to.params.macaddress;
+        console.log("Route changed, new macaddress:", this.macaddress);
+        if (!to.path.startsWith('/realtime')) {
+          this.loadInitialData();
+        }
+      }
     }
   },
   methods: {
@@ -665,7 +685,7 @@ export default {
           }]
         };
         
-        const response = await axios.get('http://localhost:5501/get-data', {
+        const response = await axios.get(`http://192.168.0.100:5501/data/${this.macaddress}`, {
           headers: {
             startTime: selectedDate[0],
             endTime: selectedDate[1],
@@ -689,9 +709,8 @@ export default {
           response.data.forEach((element) => {
             try {
               const time = new Date(element.timestamp * 1000);
-              console.log(time);
-              const voltage = parseFloat(element.voltage) || 0;
-              const current = parseFloat(element.current) || 0;
+              const voltage = 230;
+              const current = parseFloat(element.rms_current) || 0;
               const power = voltage * current;
               
               // Calculate time difference and energy
@@ -820,9 +839,21 @@ export default {
       } catch (err) {
         console.error("Error resetting zoom:", err);
       }
+    },
+    loadInitialData() {
+      const currentEpochTime = Math.floor(Date.now() / 1000);
+      const selectedDate = [currentEpochTime - 86400, currentEpochTime];
+      this.fetchDataAndLoadCharts(selectedDate);
     }
   },
-  async created() {}
+  created() {
+    // Check for macaddress in URL on initial load
+    if (this.$route.params && this.$route.params.macaddress) {
+      this.macaddress = this.$route.params.macaddress;
+      console.log("Found macaddress in URL:", this.macaddress);
+      this.loadInitialData();
+    }
+  }
 }
 </script>
 
@@ -921,6 +952,10 @@ body {
 
 /* Mobile responsiveness */
 @media (max-width: 768px) {
+  .reset-zoom-button {
+    display: none; /* Hide reset zoom button on mobile */
+  }
+  
   .chart-wrapper {
     height: 300px;
     padding: 15px;
@@ -928,11 +963,6 @@ body {
   
   .container {
     padding: 10px;
-  }
-  
-  .reset-zoom-button {
-    width: 100%;
-    margin-bottom: 15px;
   }
 }
 
@@ -981,5 +1011,47 @@ body {
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+.action-buttons {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+  width: 100%;
+}
+
+.realtime-button {
+  background-color: #e94560;
+  color: #fff !important; /* Override any default link color */
+  border: none;
+  padding: 12px 24px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 500;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.realtime-button:hover {
+  background-color: #d13350 !important;
+  transform: translateY(-3px);
+}
+
+/* Add Font Awesome Icons */
+.fa-bolt {
+  margin-right: 5px;
+}
+
+@media (max-width: 480px) {
+  .realtime-button {
+    width: 100%;
+    justify-content: center;
+    padding: 10px;
+    font-size: 14px;
+  }
 }
 </style>
