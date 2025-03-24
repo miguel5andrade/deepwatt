@@ -207,20 +207,6 @@ export default {
   width: 100%;
 }
 
-.dp__input {
-  background-color: #16213e !important;
-  color: #ddd !important;
-  border-color: #16213e !important;
-  border-radius: 6px !important;
-  width: 100% !important;
-  font-size: 14px !important;
-  padding: 8px 35px 8px 10px !important; /* Right padding for icon */
-}
-
-/* Make sure the calendar icon doesn't overlap text */
-.dp__input_icon {
-  right: 8px !important;
-}
 
 /* Mobile layout adjustments */
 @media (max-width: 600px) {

@@ -684,25 +684,33 @@ export default {
             fill: true
           }]
         };
-        
-        const response = await axios.get(
-          `http://192.168.0.100:5501/data/${this.macaddress}?startTime=${selectedDate[0]}&endTime=${selectedDate[1]}`
-        );
-        
-        if (response.data === 'Invalid device') {
-          return;
+        const url = `http://localhost:5501/data/${this.macaddress}?startTime=${selectedDate[0]}&endTime=${selectedDate[1]}` ;
+        let response;
+
+        try {
+          response = await fetch(url);
+          if (!response.ok) {
+            console.log(`Response status: ${response.status}`);
+          }
+        } catch (error) {
+          console.error(error.message);
         }
+        const json = await response.json();
+        
+        
+          
         
         // Process data first, storing in local variables
         const tempTimes = [];
         const tempPowerValues = [];
         const tempEnergyValues = [];
         
-        let previousTime = selectedDate[0];
+        let previousTime = 0;
         let previousEnergy = 0;
-        
-        if (Array.isArray(response.data) && response.data.length > 0) {
-          response.data.forEach((element) => {
+        let count = 0;
+        if (Array.isArray(json) && json.length > 0) {
+          json.forEach((element) => {
+
             try {
               const time = new Date(element.timestamp * 1000);
               const voltage = 230;
@@ -710,8 +718,16 @@ export default {
               const power = voltage * current;
               
               // Calculate time difference and energy
-              const timeDiff = element.timestamp - previousTime;
-              const energy = ((power / 1000) * timeDiff / 3600) + previousEnergy;
+              let timeDiff;
+              let energy;
+              if(count != 0){
+                timeDiff = element.timestamp - previousTime;
+                energy = ((power / 1000) * timeDiff / 3600) + previousEnergy;
+              }else{
+                //first point
+                energy = 0;
+              }
+              
               
               previousTime = element.timestamp;
               previousEnergy = energy;
@@ -726,6 +742,7 @@ export default {
               tempTimes.push(time);
               tempPowerValues.push(power);
               tempEnergyValues.push(energy);
+              count++;
             } catch (err) {
               console.error("Error processing data point:", err);
             }

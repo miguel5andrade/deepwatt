@@ -91,7 +91,6 @@ def get_data():
 
 @app.route('/data/<device_id>', methods=['GET'])
 def data(device_id):
-    # Get headers from the request
     # Get parameters from query string instead of headers
     start_time = request.args.get('startTime')
     end_time = request.args.get('endTime')
@@ -109,9 +108,16 @@ def data(device_id):
         start_time = current_time - 86400  # 24 hours ago
         end_time = current_time
         
-    data = DeviceReading.query.filter(DeviceReading.device_id == device_id and DeviceReading.timestamp >= start_time and DeviceReading.timestamp <= end_time)
+    # Fix the filter syntax to use SQLAlchemy operators correctly
+    data = DeviceReading.query.all()
+    filtered_data = []
 
-    return jsonify([record.to_dict() for record in data])
+    for record in data:
+        if(record.device_id == device_id and record.timestamp >= start_time and record.timestamp <= end_time):
+            filtered_data.append(record)
+
+
+    return jsonify([record.to_dict() for record in filtered_data])
 
 @app.route('/realtime/<device_id>', methods=["GET"])
 def realtime_data(device_id):
