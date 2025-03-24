@@ -685,13 +685,9 @@ export default {
           }]
         };
         
-        const response = await axios.get(`http://192.168.0.100:5501/data/${this.macaddress}`, {
-          headers: {
-            startTime: selectedDate[0],
-            endTime: selectedDate[1],
-            macaddress: this.macaddress
-          }
-        });
+        const response = await axios.get(
+          `http://192.168.0.100:5501/data/${this.macaddress}?startTime=${selectedDate[0]}&endTime=${selectedDate[1]}`
+        );
         
         if (response.data === 'Invalid device') {
           return;

@@ -92,9 +92,23 @@ def get_data():
 @app.route('/data/<device_id>', methods=['GET'])
 def data(device_id):
     # Get headers from the request
-    start_time = request.headers.get('startTime')
-    end_time = request.headers.get('endTime')
-
+    # Get parameters from query string instead of headers
+    start_time = request.args.get('startTime')
+    end_time = request.args.get('endTime')
+    
+    # Convert to integers if they exist
+    if start_time and end_time:
+        try:
+            start_time = int(start_time)
+            end_time = int(end_time)
+        except ValueError:
+            return jsonify({"error": "Invalid time parameters"}), 400
+    else:
+        # Default to last 24 hours if no parameters provided
+        current_time = int(time.time())
+        start_time = current_time - 86400  # 24 hours ago
+        end_time = current_time
+        
     data = DeviceReading.query.filter(DeviceReading.device_id == device_id and DeviceReading.timestamp >= start_time and DeviceReading.timestamp <= end_time)
 
     return jsonify([record.to_dict() for record in data])
