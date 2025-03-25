@@ -25,6 +25,18 @@
           <div class="loading-text">Loading data...</div>
         </div>
         
+        <!-- Current chart -->
+        <div class="chart-container" v-if="CurrentData.labels.length > 0">
+          <div class="chart-wrapper">
+            <h2>Current</h2>
+            <line-chart
+              ref="currentChart"
+              :chartData="CurrentData"
+              :options="CurrentOptionsComputed"
+            ></line-chart>
+          </div>
+        </div>
+        
         <!-- Power chart -->
         <div class="chart-container" v-if="PowerData.labels.length > 0">
           <div class="chart-wrapper">
@@ -86,6 +98,130 @@ export default {
       power_min: 10000000,
       energy_max: -100000000,
       energy_min: 100000000,
+      current_max: -1000000,
+      current_min: 10000000,
+      
+      // Add Current data structure
+      CurrentData: {
+        labels: [],
+        datasets: [
+          {
+            label: 'Current',
+            data: [],
+            borderColor: '#4bc0c0',
+            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+            borderWidth: 2,
+            fill: true
+          }
+        ]
+      },
+      // Add Current options
+      CurrentOptions: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            type: 'time',
+            time: {
+              unit: 'hour',
+              tooltipFormat: 'HH:mm',
+              displayFormats: {
+                hour: 'HH:mm'
+              }
+            },
+            grid: {
+              color: 'rgba(255, 255, 255, 0.1)'
+            },
+            ticks: {
+              color: '#aaa',
+              autoSkip: true,
+              maxTicksLimit: 20
+            },
+            title: {
+              display: true,
+              text: 'Time',
+              color: '#ddd'
+            }
+          },
+          y: {
+            title: {
+              display: true,
+              text: 'Current (A)',
+              color: '#ddd'
+            },
+            position: 'left',
+            min: 0,
+            max: 0,
+            grid: {
+              color: 'rgba(255, 255, 255, 0.1)'
+            },
+            ticks: {
+              color: '#aaa'
+            }
+          }
+        },
+        plugins: {
+          zoom: {
+            zoom: {
+              wheel: {
+                enabled: false,
+              },
+              drag: {
+                enabled: true,
+                backgroundColor: 'rgba(100,100,100,0.3)',
+                borderColor: 'rgba(200,200,200,0.4)',
+                borderWidth: 1,
+              },
+              mode: 'x',
+            },
+            pan: {
+              enabled: false,
+              mode: 'x',
+            },
+          },
+          legend: {
+            display: true,
+            labels: {
+              color: '#ddd'
+            }
+          },
+          tooltip: {
+            mode: 'index',
+            intersect: false,
+            backgroundColor: 'rgba(50, 50, 50, 0.9)',
+            titleColor: '#fff',
+            bodyColor: '#fff',
+            callbacks: {
+              title: function(context) {
+                const date = new Date(context[0].parsed.x);
+                return date.toLocaleString('en-GB', {
+                  day: '2-digit',
+                  month: '2-digit',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  hour12: false
+                }).replace(/\//g, '-');
+              }
+            }
+          }
+        },
+        elements: {
+          line: {
+            tension: 0.4
+          },
+          point: {
+            radius: 0,
+            hitRadius: 1,
+            hoverRadius: 6
+          }
+        },
+        interaction: {
+          mode: 'index',
+          intersect: false
+        },
+        stacked: false
+      },
       
       PowerData: {
         labels: [],
@@ -328,6 +464,132 @@ export default {
     }
   },
   computed: {
+    // Add Current options computed property
+    CurrentOptionsComputed() {
+      return {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            type: 'time',
+            time: {
+              unit: this.CurrentOptions.scales.x.time.unit,
+              tooltipFormat: this.CurrentOptions.scales.x.time.tooltipFormat,
+              displayFormats: {
+                hour: 'HH:mm',
+                day: 'DD'
+              }
+            },
+            grid: {
+              color: 'rgba(255, 255, 255, 0.1)'
+            },
+            ticks: {
+              color: '#aaa',
+              autoSkip: true,
+              maxTicksLimit: this.CurrentOptions.scales.x.ticks.maxTicksLimit
+            },
+            title: {
+              display: true,
+              text: 'Time',
+              color: '#ddd'
+            }
+          },
+          y: {
+            title: {
+              display: true,
+              text: 'Current (A)',
+              color: '#ddd'
+            },
+            position: 'left',
+            min: this.current_min - 1,
+            max: this.current_max + 1,
+            grid: {
+              color: 'rgba(255, 255, 255, 0.1)'
+            },
+            ticks: {
+              color: '#aaa'
+            }
+          }
+        },
+        plugins: {
+          zoom: {
+            zoom: {
+              wheel: {
+                enabled: false,
+              },
+              drag: {
+                enabled: true,
+                backgroundColor: 'rgba(100,100,100,0.3)',
+                borderColor: 'rgba(200,200,200,0.4)',
+                borderWidth: 1,
+              },
+              mode: 'x',
+            },
+            pan: {
+              enabled: false,
+            },
+            limits: {
+              x: {minRange: 60000}, // Minimum 1 minute range
+            }
+          },
+          legend: {
+            display: true,
+            labels: {
+              color: '#ddd'
+            }
+          },
+          tooltip: {
+            mode: 'index',
+            intersect: false,
+            backgroundColor: 'rgba(50, 50, 50, 0.9)',
+            titleColor: '#fff',
+            bodyColor: '#fff',
+            callbacks: {
+              title: function(context) {
+                if (!context || !context[0] || !context[0].parsed || context[0].parsed.x === undefined) {
+                  return '';
+                }
+                
+                const date = new Date(context[0].parsed.x);
+                return date.toLocaleString('en-GB', {
+                  day: '2-digit',
+                  month: '2-digit',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  hour12: false
+                }).replace(/\//g, '-');
+              }
+            }
+          }
+        },
+        elements: {
+          line: {
+            tension: 0.4
+          },
+          point: {
+            radius: 0,
+            hitRadius: 1,
+            hoverRadius: 6
+          }
+        },
+        interaction: {
+          mode: 'index',
+          intersect: false
+        },
+        stacked: false,
+        animation: {
+          duration: 0
+        },
+        transitions: {
+          zoom: {
+            animation: {
+              duration: 500
+            }
+          }
+        }
+      };
+    },
     PowerOptionsComputed() {
       // Create a fresh copy of the options to avoid reactivity issues
       return {
@@ -585,6 +847,13 @@ export default {
     }
   },
   watch: {
+    // Add watchers for current min/max
+    current_max(newVal) {
+      this.CurrentOptions.scales.y.max = newVal + 1
+    },
+    current_min(newVal) {
+      this.CurrentOptions.scales.y.min = newVal - 1
+    },
     power_max(newVal) {
       this.PowerOptions.scales.y.max = newVal + 100
     },
@@ -659,8 +928,22 @@ export default {
         this.power_min = 10000000;
         this.energy_max = -100000000;
         this.energy_min = 100000000;
+        this.current_max = -1000000;
+        this.current_min = 10000000;
         
         // Reset data arrays with new objects (not reactive)
+        this.CurrentData = {
+          labels: [],
+          datasets: [{
+            label: 'Current',
+            data: [],
+            borderColor: '#4bc0c0',
+            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+            borderWidth: 2,
+            fill: true
+          }]
+        };
+        
         this.PowerData = {
           labels: [],
           datasets: [{
@@ -702,22 +985,26 @@ export default {
         
         // Process data first, storing in local variables
         const tempTimes = [];
+        const tempCurrentValues = []; // New array for current values
         const tempPowerValues = [];
         const tempEnergyValues = [];
         
+        /*
         let previousTime = 0;
         let previousEnergy = 0;
-        let count = 0;
+        let count = 0;*/
+
         if (Array.isArray(json) && json.length > 0) {
           json.forEach((element) => {
 
             try {
               const time = new Date(element.timestamp * 1000);
-              const voltage = 230;
               const current = parseFloat(element.rms_current) || 0;
-              const power = voltage * current;
+              const power = parseFloat(element.power) || 0;
+              const energy = parseFloat(element.dailyEnergy) || 0 ;
               
               // Calculate time difference and energy
+              /*
               let timeDiff;
               let energy;
               if(count != 0){
@@ -730,19 +1017,22 @@ export default {
               
               
               previousTime = element.timestamp;
-              previousEnergy = energy;
+              previousEnergy = energy;*/
               
               // Update max/min values for chart scaling
               if (power > this.power_max) this.power_max = power;
               if (power < this.power_min) this.power_min = power;
               if (energy > this.energy_max) this.energy_max = energy;
               if (energy < this.energy_min) this.energy_min = energy;
+              if (current > this.current_max) this.current_max = current;
+              if (current < this.current_min) this.current_min = current;
               
               // Store in temporary arrays
               tempTimes.push(time);
+              tempCurrentValues.push(current); // Store current values
               tempPowerValues.push(power);
               tempEnergyValues.push(energy);
-              count++;
+              // count++;
             } catch (err) {
               console.error("Error processing data point:", err);
             }
@@ -760,12 +1050,30 @@ export default {
           this.energy_max = 1;
         }
         
+        if (this.current_min > this.current_max) {
+          this.current_min = 0;
+          this.current_max = 5;
+        }
+        
         // Decimate data if there are too many points
         const maxPoints = 500; // Reduced from 1000 to 500 for better performance
+        const decimatedCurrent = this.decimateData(tempTimes, tempCurrentValues, maxPoints);
         const decimatedPower = this.decimateData(tempTimes, tempPowerValues, maxPoints);
         const decimatedEnergy = this.decimateData(tempTimes, tempEnergyValues, maxPoints);
         
         // Create completely new objects for the chart data to avoid reactivity issues
+        this.CurrentData = {
+          labels: [...decimatedCurrent.timestamps],
+          datasets: [{
+            label: 'Current',
+            data: [...decimatedCurrent.values],
+            borderColor: '#4bc0c0',
+            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+            borderWidth: 2,
+            fill: true
+          }]
+        };
+        
         this.PowerData = {
           labels: [...decimatedPower.timestamps],
           datasets: [{
@@ -844,9 +1152,11 @@ export default {
     
     resetZoom() {
       try {
+        const currentChartInstance = this.$refs.currentChart?.getChartInstance();
         const powerChartInstance = this.$refs.powerChart?.getChartInstance();
         const energyChartInstance = this.$refs.energyChart?.getChartInstance();
         
+        if (currentChartInstance && currentChartInstance.resetZoom) currentChartInstance.resetZoom();
         if (powerChartInstance && powerChartInstance.resetZoom) powerChartInstance.resetZoom();
         if (energyChartInstance && energyChartInstance.resetZoom) energyChartInstance.resetZoom();
       } catch (err) {

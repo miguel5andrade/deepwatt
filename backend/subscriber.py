@@ -5,10 +5,17 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 from datetime import datetime
 import time
 import threading
+from dotenv import load_dotenv
+import os
+
 
 # MQTT broker details
-broker_address = "test.mosquitto.org"
-broker_port = 1883
+load_dotenv('keys.env')
+BROKER_ADDRESS = os.getenv("BROKER_ADDRESS")
+BROKER_PORT = os.getenv("BROKER_PORT")
+MOSQUITTO_USER = os.getenv("MOSQUITTO_USER")
+MOSQUITTO_PASS = os.getenv("MOSQUITTO_PASS")
+
 topic = "deepwatt/#"
 #topic will have the structure: deepwatt/<device_id>
 
@@ -26,6 +33,8 @@ class DeviceReading(Base):
     id = Column(Integer, primary_key=True)
     device_id = Column(String, index=True)
     rms_current = Column(Float)
+    power = Column(Float)
+    dailyEnergy = Column(Float)
     timestamp = Column(Integer, index=True)
     received_at = Column(DateTime)
 
@@ -38,6 +47,7 @@ def on_connect(client, userdata, flags, rc, properties=None):
         print("Connected to broker")
         # Subscribe to the topic
         client.subscribe(topic)
+        print("Subscribed to topic: " + topic)
     else:
         print("Connection failed with code", rc)
 
@@ -56,6 +66,8 @@ def on_message(client, userdata, message):
             reading = DeviceReading(
                 device_id=device_id,
                 rms_current=received.get('rmsCurrent'),
+                power = received.get('power'),
+                dailyEnergy = received.get('dailyEnergy'),
                 timestamp=received.get('timestamp'),
                 received_at = datetime.now() 
             )
@@ -64,7 +76,9 @@ def on_message(client, userdata, message):
             with deviceDataMutex:
                 deviceData[device_id] = {
                     "rms_current" : received.get('rmsCurrent'),
-                    "timestamp": received.get('timestamp')
+                    "timestamp": received.get('timestamp'),
+                    "power": received.get('power'),
+                    "dailyEnergy": received.get('dailyEnergy'),
                 }
             print(f"Data from device {device_id} stored successfully")
         except Exception as e:
@@ -99,9 +113,12 @@ def run_subscriber():
     client.on_connect = on_connect
     client.on_message = on_message
     client.on_disconnect = on_disconnect
-
+    
+    # Set username and password
+    client.username_pw_set(username=MOSQUITTO_USER, password=MOSQUITTO_PASS)
+    
     # Connect to broker
-    client.connect(broker_address, broker_port)
+    client.connect(BROKER_ADDRESS, int(BROKER_PORT))
 
     # Start the loop
     client.loop_forever()

@@ -99,8 +99,8 @@ export default {
         // Update data with response
         const data = response.data;
         this.current = data.rms_current || 0;
-        this.power = data.rms_current * 230;
-        this.todayEnergy = data.today_energy || 0;
+        this.power = data.power || 0;
+        this.todayEnergy = data.dailyEnergy || 0;
         
         // Update connection status
         this.isConnected = true;
