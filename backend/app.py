@@ -39,6 +39,19 @@ class DeviceReading(db.Model):
             "dailyEnergy":self.dailyEnergy,
         }
 
+class Budget(db.Model):
+    __tablename__ = 'budget'
+    id = db.Column(db.Integer, primary_key=True)
+    monitoring_device_id = db.Column(db.String, index=True)
+    feedback_device_id = db.Column(db.String)
+    budget = db.Column(db.Float)
+    
+    def to_dict(self):
+        return{
+            "monitoring_device_id":self.monitoring_device_id,
+            "feedback_device_id": self.feedback_device_id,
+            "budget": self.budget,
+        }
 
 with app.app_context():
     db.create_all()
@@ -89,6 +102,41 @@ def realtime_data(device_id):
     
     except:
         return jsonify({"error": "No data available"}), 404
+
+@app.route('/budget/<monitoring_device_id>', methods=["GET"])
+def get_budget(monitoring_device_id):
+    
+    record = Budget.query.filter_by(monitoring_device_id = monitoring_device_id).first()
+
+    if not record:
+        return jsonify({"error" : "No budget available"}), 404
+    
+    return jsonify(record.to_dict()),200
+
+
+@app.route('/update-budget/<monitoring_device_id>', methods=["POST"])
+def change_budget(monitoring_device_id):
+    data = request.get_json()
+    budget = data.get('budget')
+    feedback_device_id = data.get('feedback_device_id')
+
+    record = Budget.query.filter_by(monitoring_device_id=monitoring_device_id).first()
+    
+    if not record:
+        new_budget = Budget(
+            monitoring_device_id=monitoring_device_id,
+            budget=budget,
+            feedback_device_id=feedback_device_id
+        )
+        db.session.add(new_budget)
+    else:
+        record.budget = budget
+        record.feedback_device_id = feedback_device_id
+
+    db.session.commit()
+    return jsonify({"message": "Budget updated successfully"}), 200
+
+
 
 
 if __name__ == '__main__':
