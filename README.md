@@ -29,7 +29,7 @@
 
 ### Instalar requirements da api
 
-`$ pip install -r api_requirements.txt`
+`$ pip install -r requirements.txt`
 
 ### correr api:
 
@@ -47,10 +47,18 @@ Para entrar na sessão:
 
 Para sair da sessão: ctrl+b (soltar) d
 
+### Budget Publisher
+
+* Runs every 30 seconds, publishes messages with the current budget usage to the feedback nodes
+
+
+
+
 # Service
 
 ### conteudos do mtb-data-visualizer.service:
 
+```
 [Unit]
 Description=Vue.js Application
 
@@ -65,3 +73,4 @@ WorkingDirectory=/home/user/deepwaat-frontend/
 
 [Install]
 WantedBy=multi-user.target
+```

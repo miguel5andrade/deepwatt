@@ -1,0 +1,11 @@
+[Unit]
+Description=Run budgetPublisher.py every 30 sec
+Requires = budgetPublisher.service
+
+[Timer]
+OnUnitActiveSec=30s
+AccuracySec=1s
+Persistent=false
+
+[Install]
+WantedBy=timers.target
