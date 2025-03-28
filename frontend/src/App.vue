@@ -967,7 +967,8 @@ export default {
             fill: true
           }]
         };
-        const url = `http://localhost:5501/data/${this.macaddress}?startTime=${selectedDate[0]}&endTime=${selectedDate[1]}` ;
+	const encodedId= encodeURIComponent(this.macaddress);
+        const url = `http://51.44.178.184:5501/data/${encodedId}?startTime=${selectedDate[0]}&endTime=${selectedDate[1]}` ;
         let response;
 
         try {

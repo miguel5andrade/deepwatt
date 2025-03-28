@@ -65,9 +65,9 @@ def on_message(client, userdata, message):
         try:
             reading = DeviceReading(
                 device_id=device_id,
-                rms_current=received.get('rmsCurrent'),
-                power = received.get('power'),
-                dailyEnergy = received.get('dailyEnergy'),
+                rms_current=round(received.get('rmsCurrent',0),2),
+                power = round(received.get('power',0),2),
+                dailyEnergy = round(received.get('dailyEnergy',0),2),
                 timestamp=received.get('timestamp'),
                 received_at = datetime.now() 
             )
@@ -75,10 +75,10 @@ def on_message(client, userdata, message):
             session.commit()
             with deviceDataMutex:
                 deviceData[device_id] = {
-                    "rms_current" : received.get('rmsCurrent'),
+                    "rms_current" : round(received.get('rmsCurrent',0),2),
                     "timestamp": received.get('timestamp'),
-                    "power": received.get('power'),
-                    "dailyEnergy": received.get('dailyEnergy'),
+                    "power": round(received.get('power',0),2),
+                    "dailyEnergy": round(received.get('dailyEnergy',0),2),
                 }
             print(f"Data from device {device_id} stored successfully")
         except Exception as e:

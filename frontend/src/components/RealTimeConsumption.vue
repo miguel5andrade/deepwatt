@@ -142,10 +142,13 @@ export default {
     
     try {
       // Try to fetch existing budget from API
-      const response = await axios.get(`http://localhost:5501/budget/${this.deviceId}`);
-      if (response.data) {
-        this.dailyBudget = response.data.budget;
-        this.feedbackDeviceId = response.data.feedback_device_id;
+      const url = `http://51.44.178.184:5501/budget/${this.deviceId}`;
+       
+      const response = await fetch(url);
+      if (response.ok) {
+	const json = await response.json();
+        this.dailyBudget = json.budget;
+        this.feedbackDeviceId = json.feedback_device_id;
         this.budgetStatus = 'Budget loaded from server';
       }
     } catch (error) {
@@ -182,13 +185,16 @@ export default {
     
     async fetchRealtimeData() {
       try {
-        const response = await axios.get(`http://localhost:5501/realtime/${this.deviceId || 'default'}`);
-        
+        const url = `http://51.44.178.184:5501/realtime/${this.deviceId || 'default'}`;
+
+        const response = await fetch(url);
+        const json = await response.json();
+
         // Update data with response
         const data = response.data;
-        this.current = data.rms_current || 0;
-        this.power = data.power || 0;
-        this.todayEnergy = data.dailyEnergy || 0;
+        this.current = json.rms_current || 0;
+        this.power = json.power || 0;
+        this.todayEnergy = json.dailyEnergy || 0;
         
         // Calculate budget usage percentage
         this.calculateUsagePercentage();
@@ -220,7 +226,7 @@ export default {
         this.retryCount = 0;
         
       } catch (error) {
-        console.error('Error fetching real-time data:', error);
+        console.log("Error fetching real-time data:", error.toString(), JSON.stringify(error));
         this.isConnected = false;
         this.connectionStatus = 'Connection Error';
         
@@ -259,11 +265,16 @@ export default {
     async updateBudget() {
       try {
         // Save to API
-        await axios.post(`http://localhost:5501/update-budget/${this.deviceId}`, {
-          budget: this.dailyBudget,
-          feedback_device_id: this.feedbackDeviceId
-        });
-        
+	await fetch(`http://51.44.178.184:5501/update-budget/${this.deviceId}`, {
+  method: "POST",
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    budget: this.dailyBudget,
+    feedback_device_id: this.feedbackDeviceId
+  }),
+});     
         this.budgetStatus = 'Budget updated successfully';
         
         // Update chart

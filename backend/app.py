@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, make_response
 from flask_cors import CORS 
 import json
 from datetime import datetime
@@ -7,12 +7,14 @@ from flask_sqlalchemy import SQLAlchemy
 import subscriber as sub
 import threading
 import time
+from flask_compress import Compress
+
 
 DATABASE_URL = 'sqlite:///deepwatt.db'
 
 app = Flask(__name__)
-
-CORS(app)   
+Compress(app)
+CORS(app, resources={r"/*": {"origins": "*", "supports_credentials": True}}, supports_credentials=True)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -56,7 +58,13 @@ class Budget(db.Model):
 with app.app_context():
     db.create_all()
 
-
+@app.after_request
+def add_headers(response):
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+    response.headers.add('Access-Control-Allow-Credentials', 'true')
+    return response
 
 
 @app.route('/data/<device_id>', methods=['GET'])
@@ -87,7 +95,7 @@ def data(device_id):
             filtered_data.append(record)
 
 
-    return jsonify([record.to_dict() for record in filtered_data])
+    return make_response(jsonify([record.to_dict() for record in filtered_data]))
 
 @app.route('/realtime/<device_id>', methods=["GET"])
 def realtime_data(device_id):
@@ -98,7 +106,7 @@ def realtime_data(device_id):
             if (time.time() - sub.deviceData[device_id]["timestamp"] > 10):
                 return jsonify({"error": "No data available"}), 404
             data = sub.deviceData[device_id] 
-        return data, 200
+        return make_response(jsonify(data))
     
     except:
         return jsonify({"error": "No data available"}), 404
@@ -111,7 +119,7 @@ def get_budget(monitoring_device_id):
     if not record:
         return jsonify({"error" : "No budget available"}), 404
     
-    return jsonify(record.to_dict()),200
+    return make_response(jsonify(record.to_dict()))
 
 
 @app.route('/update-budget/<monitoring_device_id>', methods=["POST"])
@@ -137,7 +145,11 @@ def change_budget(monitoring_device_id):
     return jsonify({"message": "Budget updated successfully"}), 200
 
 
-
+def start_subscriber_thread():
+    from threading import Thread
+    from subscriber import run_subscriber
+    thread = Thread(target=run_subscriber)
+    thread.start()
 
 if __name__ == '__main__':
     subscriber_thread = threading.Thread(target = sub.run_subscriber)
