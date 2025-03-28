@@ -105,8 +105,19 @@ def realtime_data(device_id):
             #check if the last stored data is recent (10 sec at max)
             if (time.time() - sub.deviceData[device_id]["timestamp"] > 10):
                 return jsonify({"error": "No data available"}), 404
-            data = sub.deviceData[device_id] 
-        return make_response(jsonify(data))
+            data = sub.deviceData[device_id]
+            safe_data = {
+                "rms_current": float(sub.deviceData[device_id].get("rms_current", 0)),
+                "power": float(sub.deviceData[device_id].get("power", 0)),
+                "dailyEnergy": float(sub.deviceData[device_id].get("dailyEnergy", 0)),
+                "timestamp": int(sub.deviceData[device_id].get("timestamp", 0))
+            }
+        json_data = json.dumps(safe_data)
+        response = make_response(json_data)
+        response.headers['Content-Type'] = 'application/json'
+        response.headers['Content-Length'] = str(len(json_data))
+        return response 
+       # return make_response(jsonify(safe_data))
     
     except:
         return jsonify({"error": "No data available"}), 404
