@@ -477,7 +477,7 @@ export default {
               tooltipFormat: this.CurrentOptions.scales.x.time.tooltipFormat,
               displayFormats: {
                 hour: 'HH:mm',
-                day: 'DD'
+                day: 'dd'
               }
             },
             grid: {
@@ -603,7 +603,7 @@ export default {
               tooltipFormat: this.PowerOptions.scales.x.time.tooltipFormat,
               displayFormats: {
                 hour: 'HH:mm',
-                day: 'DD'
+                day: 'dd'
               }
             },
             grid: {
@@ -731,7 +731,7 @@ export default {
               tooltipFormat: this.EnergyOptions.scales.x.time.tooltipFormat,
               displayFormats: {
                 hour: 'HH:mm',
-                day: 'DD'
+                day: 'dd'
               }
             },
             grid: {
