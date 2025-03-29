@@ -3,10 +3,10 @@ Description=Run budget publisher script
 Wants=budgetPublisher.timer
 
 [Service]
-ExecStart=/home/ubuntu/deepwaat/backend/.venv/bin/python3 /home/ubuntu/deepwaat/backend/budgetPublisher.py
+ExecStart=/home/ubuntu/deepwatt/backend/.venv/bin/python3 /home/ubuntu/deepwatt/backend/budgetPublisher.py
 User=ubuntu
 Group=ubuntu
-WorkingDirectory=/home/ubuntu/deepwaat/backend
+WorkingDirectory=/home/ubuntu/deepwatt/backend
 
 
 [Install]
