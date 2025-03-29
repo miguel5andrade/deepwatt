@@ -92,7 +92,7 @@ def push_budget_message():
         usage_percentage = last_reading.dailyEnergy / record.budget * 100
         print(usage_percentage)
         topic = "budget/board-" + record.feedback_device_id
-        payload = usage_percentage
+        payload = int(usage_percentage)
         client.publish(topic=topic,payload= payload, qos=0, retain=0, properties=None)
         print(f"topic: {topic} \t, payload: {payload}")
 

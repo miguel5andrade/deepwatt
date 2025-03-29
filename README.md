@@ -74,3 +74,7 @@ WorkingDirectory=/home/user/deepwaat-frontend/
 [Install]
 WantedBy=multi-user.target
 ```
+
+* to use serve command: 
+
+`sudo npm install -g serve` 
