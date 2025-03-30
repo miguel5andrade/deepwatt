@@ -69,6 +69,11 @@
           <h2>Today's Energy</h2>
           <div class="value">{{ formatValue(todayEnergy, 'kWh') }}</div>
         </div>
+        
+        <div class="card money-card">
+          <h2>Today's Cost</h2>
+          <div class="value">{{ formatMoney(todayEnergy * 0.24) }}</div>
+        </div>
       </div>
       
       <div class="back-button-container">
@@ -81,8 +86,6 @@
 </template>
 
 <script>
-// Import axios for HTTP requests
-import axios from 'axios';
 import { Chart, DoughnutController, ArcElement, Tooltip } from 'chart.js';
 
 // Register required chart components
@@ -190,8 +193,7 @@ export default {
         const response = await fetch(url);
         const json = await response.json();
 
-        // Update data with response
-        const data = response.data;
+    
         this.current = json.rms_current || 0;
         this.power = json.power || 0;
         this.todayEnergy = json.dailyEnergy || 0;
@@ -242,6 +244,10 @@ export default {
     formatValue(value, unit) {
       // Format numbers to 2 decimal places
       return `${parseFloat(value).toFixed(2)} ${unit}`;
+    },
+    
+    formatMoney(value) {
+      return `${parseFloat(value).toFixed(2)} €`;
     },
     
     goBack() {
@@ -524,6 +530,11 @@ export default {
 .energy-card {
   background-color: #16213e;
   border-left: 4px solid #e94560;
+}
+
+.money-card {
+  background-color: #16213e;
+  border-left: 4px solid #28a745;
 }
 
 .card h2 {

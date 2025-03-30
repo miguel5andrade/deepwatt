@@ -61,6 +61,18 @@
           </div>
         </div>
 
+        <!-- Money chart -->
+        <div class="chart-container" v-if="MoneyData.labels.length > 0">
+          <div class="chart-wrapper">
+            <h2>Cost</h2>
+            <line-chart
+              ref="moneyChart"
+              :chartData="MoneyData"
+              :options="MoneyOptionsComputed"
+            ></line-chart>
+          </div>
+        </div>
+
         <div v-if="PowerData.labels.length === 0 && !isLoading" class="NoDataMessage">No data available</div>
       </div>
     </div>
@@ -460,7 +472,129 @@ export default {
           intersect: false
         },
         stacked: false
-      }
+      },
+      money_max: -100000000,
+      money_min: 100000000,
+      
+      MoneyData: {
+        labels: [],
+        datasets: [
+          {
+            label: 'Cost',
+            data: [],
+            borderColor: '#28a745',
+            backgroundColor: 'rgba(40, 167, 69, 0.2)',
+            borderWidth: 2,
+            fill: true
+          }
+        ]
+      },
+      MoneyOptions: {
+          responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            type: 'time',
+            time: {
+              unit: 'hour',
+              tooltipFormat: 'HH:mm',
+              displayFormats: {
+                hour: 'HH:mm'
+              }
+            },
+            grid: {
+              color: 'rgba(255, 255, 255, 0.1)'
+            },
+            ticks: {
+              color: '#aaa',
+              autoSkip: true,
+              maxTicksLimit: 20
+            },
+            title: {
+              display: true,
+              text: 'Time',
+              color: '#ddd'
+            }
+          },
+          y: {
+            title: {
+              display: true,
+              text: 'Cost (€)',
+              color: '#ddd'
+            },
+            position: 'left',
+            min: 0,
+            max: 0,
+            grid: {
+              color: 'rgba(255, 255, 255, 0.1)'
+            },
+            ticks: {
+              color: '#aaa'
+            }
+          }
+        },
+        plugins: {
+          zoom: {
+            zoom: {
+              wheel: {
+                enabled: false,
+              },
+              drag: {
+                enabled: true,
+                backgroundColor: 'rgba(100,100,100,0.3)',
+                borderColor: 'rgba(200,200,200,0.4)',
+                borderWidth: 1,
+              },
+              mode: 'x',
+            },
+            pan: {
+              enabled: false,
+              mode: 'x',
+            },
+          },
+          legend: {
+            display: true,
+            labels: {
+              color: '#ddd'
+            }
+          },
+          tooltip: {
+            mode: 'index',
+            intersect: false,
+            backgroundColor: 'rgba(50, 50, 50, 0.9)',
+            titleColor: '#fff',
+            bodyColor: '#fff',
+            callbacks: {
+              title: function(context) {
+                const date = new Date(context[0].parsed.x);
+                return date.toLocaleString('en-GB', {
+                  day: '2-digit',
+                  month: '2-digit',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  hour12: false
+                }).replace(/\//g, '-');
+              }
+            }
+          }
+        },
+        elements: {
+          line: {
+            tension: 0.4
+          },
+          point: {
+            radius: 0,
+            hitRadius: 1,
+            hoverRadius: 6
+          }
+        },
+        interaction: {
+          mode: 'index',
+          intersect: false
+        },
+        stacked: false
+      },
     }
   },
   computed: {
@@ -844,6 +978,24 @@ export default {
           }
         }
       };
+    },
+    MoneyOptionsComputed() {
+      return {
+        ...this.EnergyOptionsComputed,
+        scales: {
+          ...this.EnergyOptionsComputed.scales,
+          y: {
+            ...this.EnergyOptionsComputed.scales.y,
+            title: {
+              display: true,
+              text: 'Cost (€)',
+              color: '#ddd'
+            },
+            min: this.money_min - 1,
+            max: this.money_max + 1
+          }
+        }
+      }
     }
   },
   watch: {
@@ -930,6 +1082,8 @@ export default {
         this.energy_min = 100000000;
         this.current_max = -1000000;
         this.current_min = 10000000;
+        this.money_max = -100000000;
+        this.money_min = 100000000;
         
         // Reset data arrays with new objects (not reactive)
         this.CurrentData = {
@@ -967,6 +1121,18 @@ export default {
             fill: true
           }]
         };
+        
+        this.MoneyData = {
+          labels: [],
+          datasets: [{
+            label: 'Cost',
+            data: [],
+            borderColor: '#28a745',
+            backgroundColor: 'rgba(40, 167, 69, 0.2)',
+            borderWidth: 2,
+            fill: true
+          }]
+        };
 	const encodedId= encodeURIComponent(this.macaddress);
         const url = `http://51.44.178.184:5501/data/${encodedId}?startTime=${selectedDate[0]}&endTime=${selectedDate[1]}` ;
         let response;
@@ -989,6 +1155,7 @@ export default {
         const tempCurrentValues = []; // New array for current values
         const tempPowerValues = [];
         const tempEnergyValues = [];
+        const tempMoneyValues = [];
         
         /*
         let previousTime = 0;
@@ -1003,6 +1170,7 @@ export default {
               const current = parseFloat(element.rms_current) || 0;
               const power = parseFloat(element.power) || 0;
               const energy = parseFloat(element.dailyEnergy) || 0 ;
+              const money = energy * 0.24; // Calculate cost
               
               // Calculate time difference and energy
               /*
@@ -1027,12 +1195,15 @@ export default {
               if (energy < this.energy_min) this.energy_min = energy;
               if (current > this.current_max) this.current_max = current;
               if (current < this.current_min) this.current_min = current;
+              if (money > this.money_max) this.money_max = money;
+              if (money < this.money_min) this.money_min = money;
               
               // Store in temporary arrays
               tempTimes.push(time);
               tempCurrentValues.push(current); // Store current values
               tempPowerValues.push(power);
               tempEnergyValues.push(energy);
+              tempMoneyValues.push(money);
               // count++;
             } catch (err) {
               console.error("Error processing data point:", err);
@@ -1056,11 +1227,17 @@ export default {
           this.current_max = 5;
         }
         
+        if (this.money_min > this.money_max) {
+          this.money_min = 0;
+          this.money_max = 1;
+        }
+        
         // Decimate data if there are too many points
         const maxPoints = 500; // Reduced from 1000 to 500 for better performance
         const decimatedCurrent = this.decimateData(tempTimes, tempCurrentValues, maxPoints);
         const decimatedPower = this.decimateData(tempTimes, tempPowerValues, maxPoints);
         const decimatedEnergy = this.decimateData(tempTimes, tempEnergyValues, maxPoints);
+        const decimatedMoney = this.decimateData(tempTimes, tempMoneyValues, maxPoints);
         
         // Create completely new objects for the chart data to avoid reactivity issues
         this.CurrentData = {
@@ -1094,6 +1271,18 @@ export default {
             data: [...decimatedEnergy.values],
             borderColor: '#36a2eb',
             backgroundColor: 'rgba(54, 162, 235, 0.2)',
+            borderWidth: 2,
+            fill: true
+          }]
+        };
+        
+        this.MoneyData = {
+          labels: [...decimatedMoney.timestamps],
+          datasets: [{
+            label: 'Cost',
+            data: [...decimatedMoney.values],
+            borderColor: '#28a745',
+            backgroundColor: 'rgba(40, 167, 69, 0.2)',
             borderWidth: 2,
             fill: true
           }]
@@ -1156,10 +1345,12 @@ export default {
         const currentChartInstance = this.$refs.currentChart?.getChartInstance();
         const powerChartInstance = this.$refs.powerChart?.getChartInstance();
         const energyChartInstance = this.$refs.energyChart?.getChartInstance();
+        const moneyChartInstance = this.$refs.moneyChart?.getChartInstance();
         
         if (currentChartInstance && currentChartInstance.resetZoom) currentChartInstance.resetZoom();
         if (powerChartInstance && powerChartInstance.resetZoom) powerChartInstance.resetZoom();
         if (energyChartInstance && energyChartInstance.resetZoom) energyChartInstance.resetZoom();
+        if (moneyChartInstance && moneyChartInstance.resetZoom) moneyChartInstance.resetZoom();
       } catch (err) {
         console.error("Error resetting zoom:", err);
       }
