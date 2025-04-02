@@ -2,14 +2,18 @@
   <div id="app" class="dark-theme">
     <HeaderComponent />
     
-    <!-- Default content shown on all paths except realtime -->
-    <div v-if="!$route.path.startsWith('/realtime')">
+    <!-- Default content shown on all paths except realtime and cost-analysis -->
+    <div v-if="!$route.path.startsWith('/realtime') && !$route.path.startsWith('/cost-analysis')">
       <div class="main-page">
         <TimePeriodSelector @selectedDate="onDateChange" />
+        <p class="device-id" v-if="macaddress">Device ID: {{ macaddress }}</p>
         
         <div class="action-buttons">
           <router-link :to="'/realtime/' + macaddress" class="realtime-button">
             <i class="fas fa-bolt"></i> Real-time Monitoring
+          </router-link>
+          <router-link :to="'/cost-analysis/' + macaddress" class="cost-analysis-button">
+            <i class="fas fa-euro-sign"></i> Analyze Costs
           </router-link>
         </div>
       </div>
@@ -76,9 +80,10 @@
         <div v-if="PowerData.labels.length === 0 && !isLoading" class="NoDataMessage">No data available</div>
       </div>
     </div>
+
     
-    <!-- Router view for real-time page -->
-    <router-view v-if="$route.path.startsWith('/realtime')" @macaddress="onMacAddressChange" />
+    <!-- Router view for all routes -->
+    <router-view v-if="$route.path.startsWith('/realtime') || $route.path.startsWith('/cost-analysis')" @macaddress="onMacAddressChange" />
   </div>
 </template>
 
@@ -1530,6 +1535,7 @@ body {
 
 .action-buttons {
   display: flex;
+  gap: 20px;
   justify-content: center;
   margin-top: 20px;
   width: 100%;
@@ -1556,6 +1562,34 @@ body {
   transform: translateY(-3px);
 }
 
+.cost-analysis-button {
+  background-color: #28a745;
+  color: #fff !important;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 500;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.cost-analysis-button:hover {
+  background-color: #218838 !important;
+  transform: translateY(-3px);
+}
+
+@media (max-width: 768px) {
+  .action-buttons {
+    flex-direction: column;
+    align-items: center;
+  }
+}
+
 /* Add Font Awesome Icons */
 .fa-bolt {
   margin-right: 5px;
@@ -1563,6 +1597,12 @@ body {
 
 @media (max-width: 480px) {
   .realtime-button {
+    width: 100%;
+    justify-content: center;
+    padding: 10px;
+    font-size: 14px;
+  }
+  .cost-analysis-button {
     width: 100%;
     justify-content: center;
     padding: 10px;

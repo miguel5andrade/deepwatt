@@ -7,6 +7,7 @@ import { createRouter, createWebHistory } from 'vue-router';
 // Import components for routing
 import DeviceDetailComponent from './components/DeviceDetailComponent.vue';
 import RealTimeConsumption from './components/RealTimeConsumption.vue';
+import CostAnalysis from './components/CostAnalysis.vue';
 
 const app = createApp(App);
 
@@ -32,6 +33,12 @@ const router = createRouter({
       path: '/realtime/:macaddress?',
       name: 'RealTimeConsumption',
       component: RealTimeConsumption,
+      props: true
+    },
+    {
+      path: '/cost-analysis/:macaddress?',
+      name: 'CostAnalysis',
+      component: CostAnalysis,
       props: true
     }
   ]
