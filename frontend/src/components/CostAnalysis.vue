@@ -188,13 +188,13 @@ export default {
         const yesterday = new Date(today);
         yesterday.setDate(yesterday.getDate() - 1);
         
-        // Set to start of yesterday (00:00:00)
-        yesterday.setHours(0, 0, 0, 0);
+        // Set to 00:01 of yesterday
+        yesterday.setHours(0, 1, 0, 0);
         const startTime = Math.floor(yesterday.getTime() / 1000);
         
-        // Set to end of yesterday (23:59:59)
-        yesterday.setHours(23, 59, 59, 999);
-        const endTime = Math.floor(yesterday.getTime() / 1000);
+        // Set to 00:59 of today
+        today.setHours(0, 59, 0, 0);
+        const endTime = Math.floor(today.getTime() / 1000);
         
         // Format date for display
         this.formattedDate = yesterday.toLocaleDateString('en-GB', {

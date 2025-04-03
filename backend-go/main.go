@@ -1,0 +1,144 @@
+package main
+
+import (
+	"log"
+	"net/http"
+	"strconv"
+	"time"
+
+	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
+
+	"deepwatt/backend-go/models"
+	"deepwatt/backend-go/subscriber"
+)
+
+var db *gorm.DB
+
+func main() {
+	// Initialize database
+	var err error
+	db, err = gorm.Open(sqlite.Open("../backend/instance/deepwatt.db"), &gorm.Config{})
+	if err != nil {
+		panic("failed to connect database")
+	}
+
+	// Migrate the schema
+	db.AutoMigrate(&models.DeviceReading{}, &models.Budget{})
+
+	// Initialize MQTT subscriber
+	subscriber.Init(db)
+
+	// Initialize Gin router
+	r := gin.Default()
+
+	// Configure CORS
+	config := cors.DefaultConfig()
+	config.AllowAllOrigins = true
+	config.AllowCredentials = true
+	config.AllowHeaders = []string{"Origin", "Content-Type", "Authorization"}
+	r.Use(cors.New(config))
+
+	// Routes
+	r.GET("/data/:device_id", getData)
+	r.GET("/realtime/:device_id", getRealtimeData)
+	r.GET("/budget/:monitoring_device_id", getBudget)
+	r.POST("/update-budget/:monitoring_device_id", updateBudget)
+
+	r.Run(":5501")
+}
+
+func getData(c *gin.Context) {
+	deviceID := c.Param("device_id")
+	startTime, _ := strconv.ParseInt(c.Query("startTime"), 10, 64)
+	endTime, _ := strconv.ParseInt(c.Query("endTime"), 10, 64)
+	log.Printf("startTime: %d, endTime: %d\n", startTime, endTime)
+	if startTime == 0 || endTime == 0 {
+		endTime = time.Now().Unix()
+		startTime = endTime - 86400
+	}
+
+	log.Printf("Querying data for device %s between %d and %d", deviceID, startTime, endTime)
+
+	var readings []models.DeviceReading
+	result := db.Debug().
+		Where("device_id = ? AND timestamp >= ? AND timestamp <= ?", deviceID, startTime, endTime).
+		Find(&readings)
+
+	if result.Error != nil {
+		log.Printf("Database error: %v", result.Error)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+		return
+	}
+
+	log.Printf("Found %d readings", len(readings))
+
+	// Convert timestamps to ensure they're in the correct format
+	for i := range readings {
+		if readings[i].Timestamp == 0 {
+			readings[i].Timestamp = readings[i].ReceivedAt.Unix()
+		}
+	}
+
+	c.JSON(http.StatusOK, readings)
+}
+
+func getRealtimeData(c *gin.Context) {
+	deviceID := c.Param("device_id")
+
+	data, exists := subscriber.GetRealtimeData(deviceID)
+	if !exists {
+		c.JSON(http.StatusNotFound, gin.H{"error": "No data available"})
+		return
+	}
+
+	c.JSON(http.StatusOK, data)
+}
+
+func getBudget(c *gin.Context) {
+	monitoringDeviceID := c.Param("monitoring_device_id")
+
+	var budget models.Budget
+	if result := db.Where("monitoring_device_id = ?", monitoringDeviceID).First(&budget); result.Error != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "No budget available"})
+		return
+	}
+
+	c.JSON(http.StatusOK, budget)
+}
+
+func updateBudget(c *gin.Context) {
+	monitoringDeviceID := c.Param("monitoring_device_id")
+
+	var input struct {
+		Budget           float64 `json:"budget"`
+		FeedbackDeviceID string  `json:"feedback_device_id"`
+	}
+
+	if err := c.BindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
+		return
+	}
+
+	var budget models.Budget
+	result := db.Where("monitoring_device_id = ?", monitoringDeviceID).First(&budget)
+
+	if result.Error != nil {
+		// Create new budget
+		budget = models.Budget{
+			MonitoringDeviceID: monitoringDeviceID,
+			Budget:             input.Budget,
+			FeedbackDeviceID:   input.FeedbackDeviceID,
+		}
+		db.Create(&budget)
+	} else {
+		// Update existing budget
+		budget.Budget = input.Budget
+		budget.FeedbackDeviceID = input.FeedbackDeviceID
+		db.Save(&budget)
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Budget updated successfully"})
+}
