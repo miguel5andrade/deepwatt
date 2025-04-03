@@ -188,8 +188,8 @@ export default {
         const yesterday = new Date(today);
         yesterday.setDate(yesterday.getDate() - 1);
         
-        // Set to 00:01 of yesterday
-        yesterday.setHours(0, 1, 0, 0);
+        // Set to 01:01 of yesterday
+        yesterday.setHours(1, 1, 0, 0);
         const startTime = Math.floor(yesterday.getTime() / 1000);
         
         // Set to 00:59 of today
