@@ -9,7 +9,7 @@ type DeviceReading struct {
 	DeviceID    string    `gorm:"index" json:"device_id"`
 	RMSCurrent  float64   `json:"rms_current"`
 	Power       float64   `json:"power"`
-	DailyEnergy float64   `json:"dailyEnergy"`
+	DailyEnergy float64   `gorm:"column:dailyEnergy" json:"dailyEnergy"` // Add explicit column name
 	Timestamp   int64     `gorm:"index" json:"timestamp"`
 	ReceivedAt  time.Time `json:"received_at"`
 }

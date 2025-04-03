@@ -69,6 +69,7 @@ func getData(c *gin.Context) {
 
 	var readings []models.DeviceReading
 	result := db.Debug().
+		Select("id, device_id, rms_current, power, \"dailyEnergy\", timestamp, received_at"). // Explicit column selection
 		Where("device_id = ? AND timestamp >= ? AND timestamp <= ?", deviceID, startTime, endTime).
 		Find(&readings)
 
@@ -76,6 +77,11 @@ func getData(c *gin.Context) {
 		log.Printf("Database error: %v", result.Error)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
 		return
+	}
+
+	// Debug print first reading
+	if len(readings) > 0 {
+		log.Printf("First reading: %+v", readings[0])
 	}
 
 	log.Printf("Found %d readings", len(readings))

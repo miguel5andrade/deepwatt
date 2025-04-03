@@ -58,20 +58,17 @@ func Init(database *gorm.DB) {
 
 func Sub() {
 	topic := "deepwatt/#"
-	
+
 	if token := client.Subscribe("deepwatt/#", 0, messageHandler); token.Wait() && token.Error() != nil {
 		panic(token.Error())
 	}
 	log.Printf("Subscribed to the topic %s\n", topic)
 }
 
-
 var connectHandler mqtt.OnConnectHandler = func(client mqtt.Client) {
 	log.Println("Connected to the Broker")
 	Sub() //subscribe to the topic
 }
-
-
 
 func messageHandler(client mqtt.Client, msg mqtt.Message) {
 	deviceID := msg.Topic()[9:] // Extract device ID from topic
