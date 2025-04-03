@@ -20,7 +20,8 @@ var db *gorm.DB
 func main() {
 	// Initialize database
 	var err error
-	db, err = gorm.Open(sqlite.Open("../backend/instance/deepwatt.db"), &gorm.Config{})
+	dbPath := "../backend/instance/deepwatt.db"
+	db, err = gorm.Open(sqlite.Open(dbPath), &gorm.Config{})
 	if err != nil {
 		panic("failed to connect database")
 	}
@@ -32,6 +33,7 @@ func main() {
 	subscriber.Init(db)
 
 	// Initialize Gin router
+	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
 
 	// Configure CORS
@@ -47,7 +49,10 @@ func main() {
 	r.GET("/budget/:monitoring_device_id", getBudget)
 	r.POST("/update-budget/:monitoring_device_id", updateBudget)
 
-	r.Run(":5501")
+	log.Printf("Starting server on 0.0.0.0:5501")
+	if err := r.Run("0.0.0.0:5501"); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func getData(c *gin.Context) {

@@ -21,13 +21,21 @@ var (
 	dataMutex  sync.RWMutex
 	db         *gorm.DB
 )
+var client mqtt.Client
 
 func Init(database *gorm.DB) {
 	db = database
+	log.Printf("Subscriber initialized with shared database connection")
 
-	err := godotenv.Load("keys.env")
+	err := godotenv.Load("../keys.env")
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		log.Printf("Error loading .env file: %v", err)
+		// Try current directory as fallback
+		err = godotenv.Load("keys.env")
+		log.Printf("Loaded keys.env")
+		if err != nil {
+			log.Fatal("Could not load .env file in either location")
+		}
 	}
 
 	opts := mqtt.NewClientOptions()
@@ -37,16 +45,33 @@ func Init(database *gorm.DB) {
 	opts.SetUsername(os.Getenv("MOSQUITTO_USER"))
 	opts.SetPassword(os.Getenv("MOSQUITTO_PASS"))
 	opts.SetClientID("deepwatt_subscriber_go")
+	opts.SetAutoReconnect(true)
+	opts.SetConnectRetry(true)
+	opts.OnConnect = connectHandler
 
-	client := mqtt.NewClient(opts)
+	client = mqtt.NewClient(opts)
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
 		panic(token.Error())
 	}
 
+}
+
+func Sub() {
+	topic := "deepwatt/#"
+	
 	if token := client.Subscribe("deepwatt/#", 0, messageHandler); token.Wait() && token.Error() != nil {
 		panic(token.Error())
 	}
+	log.Printf("Subscribed to the topic %s\n", topic)
 }
+
+
+var connectHandler mqtt.OnConnectHandler = func(client mqtt.Client) {
+	log.Println("Connected to the Broker")
+	Sub() //subscribe to the topic
+}
+
+
 
 func messageHandler(client mqtt.Client, msg mqtt.Message) {
 	deviceID := msg.Topic()[9:] // Extract device ID from topic
@@ -57,7 +82,7 @@ func messageHandler(client mqtt.Client, msg mqtt.Message) {
 		return
 	}
 
-	// Store in database
+	// Store in database using shared connection
 	reading := models.DeviceReading{
 		DeviceID:    deviceID,
 		RMSCurrent:  data.RMSCurrent,
@@ -68,7 +93,7 @@ func messageHandler(client mqtt.Client, msg mqtt.Message) {
 	}
 
 	if result := db.Create(&reading); result.Error != nil {
-		log.Printf("Error storing reading: %v", result.Error)
+		log.Printf("Error storing reading in shared database: %v", result.Error)
 		return
 	}
 
@@ -76,6 +101,9 @@ func messageHandler(client mqtt.Client, msg mqtt.Message) {
 	dataMutex.Lock()
 	deviceData[deviceID] = data
 	dataMutex.Unlock()
+
+	log.Printf("Stored reading for device %s: Power=%.2fW, Energy=%.2fkWh",
+		deviceID, data.Power, data.DailyEnergy)
 }
 
 func GetRealtimeData(deviceID string) (models.RealtimeData, bool) {
