@@ -194,7 +194,7 @@ export default {
         const json = await response.json();
 
     
-        this.current = json.rms_current || 0;
+        this.current = json.rmsCurrent || 0;
         this.power = json.power || 0;
         this.todayEnergy = json.dailyEnergy || 0;
         
