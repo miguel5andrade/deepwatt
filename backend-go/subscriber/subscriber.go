@@ -44,7 +44,7 @@ func Init(database *gorm.DB) {
 		os.Getenv("BROKER_PORT")))
 	opts.SetUsername(os.Getenv("MOSQUITTO_USER"))
 	opts.SetPassword(os.Getenv("MOSQUITTO_PASS"))
-	opts.SetClientID("deepwatt_subscriber_go")
+	opts.SetClientID("deepwatt_subscriber_go1")
 	opts.SetAutoReconnect(true)
 	opts.SetConnectRetry(true)
 	opts.OnConnect = connectHandler
@@ -82,7 +82,7 @@ func messageHandler(client mqtt.Client, msg mqtt.Message) {
 	// Store in database using shared connection
 	reading := models.DeviceReading{
 		DeviceID:    deviceID,
-		RMSCurrent:  data.RMSCurrent,
+		RMSCurrent:  data.RmsCurrent,
 		Power:       data.Power,
 		DailyEnergy: data.DailyEnergy,
 		Timestamp:   data.Timestamp,
@@ -99,8 +99,8 @@ func messageHandler(client mqtt.Client, msg mqtt.Message) {
 	deviceData[deviceID] = data
 	dataMutex.Unlock()
 
-	log.Printf("Stored reading for device %s: Power=%.2fW, Energy=%.2fkWh",
-		deviceID, data.Power, data.DailyEnergy)
+	log.Printf("Stored reading for device %s: Power=%.2fW, Energy=%.2fkWh, Current=%.2fA",
+		deviceID, data.Power, data.DailyEnergy, data.RmsCurrent)
 }
 
 func GetRealtimeData(deviceID string) (models.RealtimeData, bool) {

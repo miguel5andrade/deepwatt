@@ -31,7 +31,7 @@ func (Budget) TableName() string {
 }
 
 type RealtimeData struct {
-	RMSCurrent  float64 `json:"rms_current"`
+	RmsCurrent  float64 `json:"rmsCurrent"`
 	Power       float64 `json:"power"`
 	DailyEnergy float64 `json:"dailyEnergy"`
 	Timestamp   int64   `json:"timestamp"`
