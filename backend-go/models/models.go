@@ -14,11 +14,20 @@ type DeviceReading struct {
 	ReceivedAt  time.Time `json:"received_at"`
 }
 
+func (DeviceReading) TableName() string {
+	return "device_readings"
+}
+
 type Budget struct {
 	ID                 uint    `gorm:"primarykey" json:"-"`
 	MonitoringDeviceID string  `gorm:"index" json:"monitoring_device_id"`
 	FeedbackDeviceID   string  `json:"feedback_device_id"`
 	Budget             float64 `json:"budget"`
+}
+
+// specify the table name
+func (Budget) TableName() string {
+	return "budget"
 }
 
 type RealtimeData struct {
