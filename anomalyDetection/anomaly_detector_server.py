@@ -5,7 +5,7 @@ from datetime import timedelta
 import time
 import logging 
 
-DB_PATH = 'deepwatt.db'
+DB_PATH = '../backend/instance/deepwatt.db'
 MODEL_PATH = 'anomaly_model.pkl'
 SCALER_PATH = 'scaler.pkl'
 DEVICE_ID = 'board-cc:50:e3:60:e6:80'  
@@ -18,8 +18,8 @@ logging.basicConfig(format='%(asctime)s:%(levelname)s:%(message)s',filename='ano
 
 # time period of 5 min
 now = time.time()
-start_time = int((now - timedelta(minutes=5)).timestamp())
-end_time = int(now.timestamp())
+start_time = int((now - 7776000)) #5min = 300 sec
+end_time = int(now)
 
 
 conn = sqlite3.connect(DB_PATH)
@@ -57,13 +57,12 @@ for _, row in anomalies.iterrows():
     if exists == 0:
         #if not, insert
         cursor.execute("""
-            INSERT INTO anomalies (device_reading_id, rms_current, timestamp, created_at)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO anomalies (device_reading_id, rms_current, timestamp)
+            VALUES (?, ?, ?)
         """, (
             int(row['id']),
             float(row['rms_current']),
-            int(row['timestamp']),
-            time.time()
+            int(row['timestamp'])
         ))
         inserted += 1
 
