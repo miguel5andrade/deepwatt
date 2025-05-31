@@ -73,7 +73,7 @@ var connectHandler mqtt.OnConnectHandler = func(client mqtt.Client) {
 func messageHandler(client mqtt.Client, msg mqtt.Message) {
 	deviceID := msg.Topic()[9:] // Extract device ID from topic
 	var data models.RealtimeData
-
+	log.Printf("Received message on topic %s -> Received Payload: %s\n", msg.Topic(), msg.Payload())
 	if err := json.Unmarshal(msg.Payload(), &data); err != nil {
 		log.Printf("Error unmarshaling message: %v", err)
 		return

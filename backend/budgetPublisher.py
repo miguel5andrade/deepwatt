@@ -79,7 +79,11 @@ def push_budget_message():
     budgets = session.query(Budget).all()
 
     for record in budgets:
+        print(record.monitoring_device_id)
         last_reading = session.query(DeviceReading).filter_by(device_id = record.monitoring_device_id).order_by(DeviceReading.id.desc()).first()
+        if(not last_reading):
+            print("No last_reading found")
+            continue
         usage_percentage = last_reading.dailyEnergy / record.budget * 100
         print(usage_percentage)
         topic = "budget/" + record.feedback_device_id
@@ -87,7 +91,7 @@ def push_budget_message():
         client.publish(topic=topic,payload= payload, qos=0, retain=0, properties=None)
         print(f"topic: {topic}, payload: {payload}")
         time.sleep(1)
-	
+
     client.loop_stop()
     client.disconnect()
     
