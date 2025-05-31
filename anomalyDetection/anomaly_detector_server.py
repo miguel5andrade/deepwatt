@@ -18,7 +18,7 @@ logging.basicConfig(format='%(asctime)s:%(levelname)s:%(message)s',filename='ano
 
 # time period of 5 min
 now = time.time()
-start_time = int((now - 7776000)) #5min = 300 sec
+start_time = int((now - 300)) #5min = 300 sec
 end_time = int(now)
 
 
