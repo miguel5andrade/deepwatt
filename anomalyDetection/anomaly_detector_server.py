@@ -26,7 +26,7 @@ conn = sqlite3.connect(DB_PATH)
 cursor = conn.cursor()
 
 query = """
-SELECT id, timestamp, rms_current
+SELECT id, timestamp, rms_current, device_id
 FROM device_readings
 WHERE device_id = ? AND timestamp >= ? AND timestamp <= ? AND rms_current IS NOT NULL
 ORDER BY timestamp ASC
@@ -57,12 +57,13 @@ for _, row in anomalies.iterrows():
     if exists == 0:
         #if not, insert
         cursor.execute("""
-            INSERT INTO anomalies (device_reading_id, rms_current, timestamp)
-            VALUES (?, ?, ?)
+            INSERT INTO anomalies (device_reading_id, rms_current, timestamp, device_id)
+            VALUES (?, ?, ?, ?)
         """, (
             int(row['id']),
             float(row['rms_current']),
-            int(row['timestamp'])
+            int(row['timestamp']),
+            row['device_id']
         ))
         inserted += 1
 
