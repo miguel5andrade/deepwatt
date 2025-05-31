@@ -48,6 +48,7 @@ func main() {
 	r.GET("/realtime/:device_id", getRealtimeData)
 	r.GET("/budget/:monitoring_device_id", getBudget)
 	r.POST("/update-budget/:monitoring_device_id", updateBudget)
+	r.GET("/anomalies/:device_id", getAnomalies)
 
 	log.Printf("Starting server on 0.0.0.0:5501")
 	if err := r.Run("0.0.0.0:5501"); err != nil {
@@ -152,4 +153,29 @@ func updateBudget(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Budget updated successfully"})
+}
+
+func getAnomalies(c *gin.Context) {
+	deviceID := c.Param("device_id")
+	startTime, _ := strconv.ParseInt(c.Query("startTime"), 10, 64)
+	endTime, _ := strconv.ParseInt(c.Query("endTime"), 10, 64)
+	log.Printf("startTime: %d, endTime: %d\n", startTime, endTime)
+	if startTime == 0 || endTime == 0 {
+		endTime = time.Now().Unix()
+		startTime = endTime - 86400
+	}
+
+	var anomalies []models.Anomalies
+	result := db.Debug().
+		Select("id, device_reading_id,device_id, rms_current, , timestamp").
+		Where("device_id = ? AND timestamp >= ? AND timestamp <= ?", deviceID, startTime, endTime).
+		Find(&anomalies)
+
+	if result.Error != nil {
+		log.Printf("Database error: %v", result.Error)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+		return
+	}
+
+	c.JSON(http.StatusOK, anomalies)
 }

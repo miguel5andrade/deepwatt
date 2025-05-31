@@ -36,3 +36,16 @@ type RealtimeData struct {
 	DailyEnergy float64 `json:"dailyEnergy"`
 	Timestamp   int64   `json:"timestamp"`
 }
+
+// specify the table name
+func (Anomalies) TableName() string {
+	return "anomalies"
+}
+
+type Anomalies struct {
+	ID              uint    `gorm:"primarykey" json:"id"`
+	DeviceReadingId uint    `json:"device_reading_id"`
+	DeviceID        string  `gorm:"index" json:"device_id"`
+	RMSCurrent      float64 `json:"rms_current"`
+	Timestamp       int64   `gorm:"index" json:"timestamp"`
+}
