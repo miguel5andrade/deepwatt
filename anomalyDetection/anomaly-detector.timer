@@ -1,0 +1,11 @@
+[Unit]
+Description=Run anomaly_detector_server.py every 5min
+Requires = anomaly-detector.service
+
+[Timer]
+OnUnitActiveSec=300s
+AccuracySec=1s
+Persistent=false
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,13 @@
+[Unit]
+Description=Run anomaly_detector_server.py
+Wants=anomaly-detector.timer
+
+
+[Service]
+User = ubuntu
+Group = ubuntu
+ExecStart=/home/ubuntu/deepwatt/anomalyDetection/.venv/bin/python3 /home/ubuntu/deepwatt/anomalyDetection/anomaly_detector_server.py
+WorkingDirectory =/home/ubuntu/deepwatt/anomalyDetection
+
+[Install]
+WantedBy=timers.target
