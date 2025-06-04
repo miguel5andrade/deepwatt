@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strconv"
 	"time"
-
+	"fmt"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/sqlite"
@@ -159,15 +159,16 @@ func getAnomalies(c *gin.Context) {
 	deviceID := c.Param("device_id")
 	startTime, _ := strconv.ParseInt(c.Query("startTime"), 10, 64)
 	endTime, _ := strconv.ParseInt(c.Query("endTime"), 10, 64)
-	log.Printf("startTime: %d, endTime: %d\n", startTime, endTime)
+	fmt.Printf("startTime: %d, endTime: %d\n", startTime, endTime)
 	if startTime == 0 || endTime == 0 {
 		endTime = time.Now().Unix()
 		startTime = endTime - 86400
+		fmt.Println("defaulting to one week period")
 	}
 
 	var anomalies []models.Anomalies
 	result := db.Debug().
-		Select("id, device_reading_id,device_id, rms_current, , timestamp").
+		Select("id, device_reading_id,device_id, rms_current, timestamp").
 		Where("device_id = ? AND timestamp >= ? AND timestamp <= ?", deviceID, startTime, endTime).
 		Find(&anomalies)
 
