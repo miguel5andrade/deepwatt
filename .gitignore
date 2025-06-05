@@ -33,3 +33,4 @@ coverage
 *.db
 /powerMeterNode
 *.env
+*.pkl

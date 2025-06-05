@@ -1,13 +1,13 @@
 <template>
   <div id="app" class="dark-theme">
     <HeaderComponent />
-    
+
     <!-- Default content shown on all paths except realtime and cost-analysis -->
     <div v-if="!$route.path.startsWith('/realtime') && !$route.path.startsWith('/cost-analysis')">
       <div class="main-page">
         <TimePeriodSelector @selectedDate="onDateChange" />
         <p class="device-id" v-if="macaddress">Device ID: {{ macaddress }}</p>
-        
+
         <div class="action-buttons">
           <router-link :to="'/realtime/' + macaddress" class="realtime-button">
             <i class="fas fa-bolt"></i> Real-time Monitoring
@@ -22,34 +22,40 @@
         <button @click="resetZoom" class="reset-zoom-button">
           <i class="fas fa-search-minus"></i> Reset Zoom
         </button>
-        
+
         <!-- Loading spinner -->
         <div class="loading-overlay" v-if="isLoading">
           <div class="spinner"></div>
           <div class="loading-text">Loading data...</div>
         </div>
-        
+
+        <!-- Anomalies section -->
+        <div class="anomalies-container" v-if="anomalies.length > 0">
+          <h2>Detected Anomalies by AI</h2>
+          <div class="anomalies-list">
+            <div v-for="anomaly in anomalies" :key="anomaly.id" class="anomaly-item">
+              <div class="anomaly-time">{{ formatAnomalyTime(anomaly.timestamp) }}</div>
+              <div class="anomaly-info">
+                <i class="fas fa-exclamation-triangle"></i>
+                Spike in consumption: {{ anomaly.rms_current.toFixed(1) }}A
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Current chart -->
         <div class="chart-container" v-if="CurrentData.labels.length > 0">
           <div class="chart-wrapper">
             <h2>Current</h2>
-            <line-chart
-              ref="currentChart"
-              :chartData="CurrentData"
-              :options="CurrentOptionsComputed"
-            ></line-chart>
+            <line-chart ref="currentChart" :chartData="CurrentData" :options="CurrentOptionsComputed"></line-chart>
           </div>
         </div>
-        
+
         <!-- Power chart -->
         <div class="chart-container" v-if="PowerData.labels.length > 0">
           <div class="chart-wrapper">
             <h2>Power</h2>
-            <line-chart
-              ref="powerChart"
-              :chartData="PowerData"
-              :options="PowerOptionsComputed"
-            ></line-chart>
+            <line-chart ref="powerChart" :chartData="PowerData" :options="PowerOptionsComputed"></line-chart>
           </div>
         </div>
 
@@ -57,11 +63,7 @@
         <div class="chart-container" v-if="EnergyData.labels.length > 0">
           <div class="chart-wrapper">
             <h2>Energy</h2>
-            <line-chart
-              ref="energyChart"
-              :chartData="EnergyData"
-              :options="EnergyOptionsComputed"
-            ></line-chart>
+            <line-chart ref="energyChart" :chartData="EnergyData" :options="EnergyOptionsComputed"></line-chart>
           </div>
         </div>
 
@@ -69,11 +71,7 @@
         <div class="chart-container" v-if="MoneyData.labels.length > 0">
           <div class="chart-wrapper">
             <h2>Cost</h2>
-            <line-chart
-              ref="moneyChart"
-              :chartData="MoneyData"
-              :options="MoneyOptionsComputed"
-            ></line-chart>
+            <line-chart ref="moneyChart" :chartData="MoneyData" :options="MoneyOptionsComputed"></line-chart>
           </div>
         </div>
 
@@ -81,9 +79,10 @@
       </div>
     </div>
 
-    
+
     <!-- Router view for all routes -->
-    <router-view v-if="$route.path.startsWith('/realtime') || $route.path.startsWith('/cost-analysis')" @macaddress="onMacAddressChange" />
+    <router-view v-if="$route.path.startsWith('/realtime') || $route.path.startsWith('/cost-analysis')"
+      @macaddress="onMacAddressChange" />
   </div>
 </template>
 
@@ -117,7 +116,8 @@ export default {
       energy_min: 100000000,
       current_max: -1000000,
       current_min: 10000000,
-      
+      anomalies: [],
+
       // Add Current data structure
       CurrentData: {
         labels: [],
@@ -209,7 +209,7 @@ export default {
             titleColor: '#fff',
             bodyColor: '#fff',
             callbacks: {
-              title: function(context) {
+              title: function (context) {
                 const date = new Date(context[0].parsed.x);
                 return date.toLocaleString('en-GB', {
                   day: '2-digit',
@@ -239,7 +239,7 @@ export default {
         },
         stacked: false
       },
-      
+
       PowerData: {
         labels: [],
         datasets: [
@@ -329,7 +329,7 @@ export default {
             titleColor: '#fff',
             bodyColor: '#fff',
             callbacks: {
-              title: function(context) {
+              title: function (context) {
                 const date = new Date(context[0].parsed.x);
                 return date.toLocaleString('en-GB', {
                   day: '2-digit',
@@ -448,7 +448,7 @@ export default {
             titleColor: '#fff',
             bodyColor: '#fff',
             callbacks: {
-              title: function(context) {
+              title: function (context) {
                 const date = new Date(context[0].parsed.x);
                 return date.toLocaleString('en-GB', {
                   day: '2-digit',
@@ -480,7 +480,7 @@ export default {
       },
       money_max: -100000000,
       money_min: 100000000,
-      
+
       MoneyData: {
         labels: [],
         datasets: [
@@ -495,7 +495,7 @@ export default {
         ]
       },
       MoneyOptions: {
-          responsive: true,
+        responsive: true,
         maintainAspectRatio: false,
         scales: {
           x: {
@@ -570,7 +570,7 @@ export default {
             titleColor: '#fff',
             bodyColor: '#fff',
             callbacks: {
-              title: function(context) {
+              title: function (context) {
                 const date = new Date(context[0].parsed.x);
                 return date.toLocaleString('en-GB', {
                   day: '2-digit',
@@ -668,7 +668,7 @@ export default {
               enabled: false,
             },
             limits: {
-              x: {minRange: 60000}, // Minimum 1 minute range
+              x: { minRange: 60000 }, // Minimum 1 minute range
             }
           },
           legend: {
@@ -684,11 +684,11 @@ export default {
             titleColor: '#fff',
             bodyColor: '#fff',
             callbacks: {
-              title: function(context) {
+              title: function (context) {
                 if (!context || !context[0] || !context[0].parsed || context[0].parsed.x === undefined) {
                   return '';
                 }
-                
+
                 const date = new Date(context[0].parsed.x);
                 return date.toLocaleString('en-GB', {
                   day: '2-digit',
@@ -794,7 +794,7 @@ export default {
               enabled: false,
             },
             limits: {
-              x: {minRange: 60000}, // Minimum 1 minute range
+              x: { minRange: 60000 }, // Minimum 1 minute range
             }
           },
           legend: {
@@ -810,11 +810,11 @@ export default {
             titleColor: '#fff',
             bodyColor: '#fff',
             callbacks: {
-              title: function(context) {
+              title: function (context) {
                 if (!context || !context[0] || !context[0].parsed || context[0].parsed.x === undefined) {
                   return '';
                 }
-                
+
                 const date = new Date(context[0].parsed.x);
                 return date.toLocaleString('en-GB', {
                   day: '2-digit',
@@ -856,7 +856,7 @@ export default {
         }
       };
     },
-    
+
     EnergyOptionsComputed() {
       // Create a fresh copy of the energy options
       return {
@@ -922,7 +922,7 @@ export default {
               enabled: false,
             },
             limits: {
-              x: {minRange: 60000}, // Minimum 1 minute range
+              x: { minRange: 60000 }, // Minimum 1 minute range
             }
           },
           legend: {
@@ -938,11 +938,11 @@ export default {
             titleColor: '#fff',
             bodyColor: '#fff',
             callbacks: {
-              title: function(context) {
+              title: function (context) {
                 if (!context || !context[0] || !context[0].parsed || context[0].parsed.x === undefined) {
                   return '';
                 }
-                
+
                 const date = new Date(context[0].parsed.x);
                 return date.toLocaleString('en-GB', {
                   day: '2-digit',
@@ -1059,26 +1059,49 @@ export default {
       if (timestamps.length <= maxDataPoints) {
         return { timestamps, values };
       }
-      
+
       // Calculate the step size needed to reduce data to max points
       const step = Math.ceil(timestamps.length / maxDataPoints);
-      
+
       // Create decimated arrays
       const decimatedTimestamps = [];
       const decimatedValues = [];
-      
+
       for (let i = 0; i < timestamps.length; i += step) {
         decimatedTimestamps.push(timestamps[i]);
         decimatedValues.push(values[i]);
       }
-      
+
       return { timestamps: decimatedTimestamps, values: decimatedValues };
     },
-    
+
+    // Add a new method to filter anomalies by time difference
+    filterAnomaliesByTime(anomalies, minTimeDiff = 300) { // 300 seconds = 5 min
+      if (!anomalies || anomalies.length === 0) {
+        return [];
+      }
+
+      // Sort anomalies by timestamp first
+      const sortedAnomalies = [...anomalies].sort((a, b) => a.timestamp - b.timestamp);
+
+      const filtered = [sortedAnomalies[0]]; // Add first anomaly
+      let lastTimestamp = sortedAnomalies[0].timestamp;
+
+      // Loop through the rest and only add if they're at least minTimeDiff apart
+      for (let i = 1; i < sortedAnomalies.length; i++) {
+        if (sortedAnomalies[i].timestamp - lastTimestamp >= minTimeDiff) {
+          filtered.push(sortedAnomalies[i]);
+          lastTimestamp = sortedAnomalies[i].timestamp;
+        }
+      }
+
+      return filtered;
+    },
+
     async fetchDataAndLoadCharts(selectedDate) {
       // Show loading spinner
       this.isLoading = true;
-      
+
       try {
         // Reset min/max values before fetching
         this.power_max = -1000000;
@@ -1089,7 +1112,7 @@ export default {
         this.current_min = 10000000;
         this.money_max = -100000000;
         this.money_min = 100000000;
-        
+
         // Reset data arrays with new objects (not reactive)
         this.CurrentData = {
           labels: [],
@@ -1102,7 +1125,7 @@ export default {
             fill: true
           }]
         };
-        
+
         this.PowerData = {
           labels: [],
           datasets: [{
@@ -1114,7 +1137,7 @@ export default {
             fill: true
           }]
         };
-        
+
         this.EnergyData = {
           labels: [],
           datasets: [{
@@ -1126,7 +1149,7 @@ export default {
             fill: true
           }]
         };
-        
+
         this.MoneyData = {
           labels: [],
           datasets: [{
@@ -1138,8 +1161,8 @@ export default {
             fill: true
           }]
         };
-	const encodedId= encodeURIComponent(this.macaddress);
-        const url = `http://51.44.178.184:5501/data/${encodedId}?startTime=${selectedDate[0]}&endTime=${selectedDate[1]}` ;
+        const encodedId1 = encodeURIComponent(this.macaddress);
+        const url = `http://51.44.178.184:5501/data/${encodedId1}?startTime=${selectedDate[0]}&endTime=${selectedDate[1]}`;
         let response;
 
         try {
@@ -1151,17 +1174,17 @@ export default {
           console.error(error.message);
         }
         const json = await response.json();
-        
-        
-          
-        
+
+
+
+
         // Process data first, storing in local variables
         const tempTimes = [];
         const tempCurrentValues = []; // New array for current values
         const tempPowerValues = [];
         const tempEnergyValues = [];
         const tempMoneyValues = [];
-        
+
         /*
         let previousTime = 0;
         let previousEnergy = 0;
@@ -1174,9 +1197,9 @@ export default {
               const time = new Date(element.timestamp * 1000);
               const current = parseFloat(element.rms_current) || 0;
               const power = parseFloat(element.power) || 0;
-              const energy = parseFloat(element.dailyEnergy) || 0 ;
+              const energy = parseFloat(element.dailyEnergy) || 0;
               const money = energy * 0.24; // Calculate cost
-              
+
               // Calculate time difference and energy
               /*
               let timeDiff;
@@ -1192,7 +1215,7 @@ export default {
               
               previousTime = element.timestamp;
               previousEnergy = energy;*/
-              
+
               // Update max/min values for chart scaling
               if (power > this.power_max) this.power_max = power;
               if (power < this.power_min) this.power_min = power;
@@ -1202,7 +1225,7 @@ export default {
               if (current < this.current_min) this.current_min = current;
               if (money > this.money_max) this.money_max = money;
               if (money < this.money_min) this.money_min = money;
-              
+
               // Store in temporary arrays
               tempTimes.push(time);
               tempCurrentValues.push(current); // Store current values
@@ -1215,35 +1238,35 @@ export default {
             }
           });
         }
-        
+
         // Set minimum values if they're still at initial state
         if (this.power_min > this.power_max) {
           this.power_min = 0;
           this.power_max = 100;
         }
-        
+
         if (this.energy_min > this.energy_max) {
           this.energy_min = 0;
           this.energy_max = 1;
         }
-        
+
         if (this.current_min > this.current_max) {
           this.current_min = 0;
           this.current_max = 5;
         }
-        
+
         if (this.money_min > this.money_max) {
           this.money_min = 0;
           this.money_max = 1;
         }
-        
+
         // Decimate data if there are too many points
         const maxPoints = 500; // Reduced from 1000 to 500 for better performance
         const decimatedCurrent = this.decimateData(tempTimes, tempCurrentValues, maxPoints);
         const decimatedPower = this.decimateData(tempTimes, tempPowerValues, maxPoints);
         const decimatedEnergy = this.decimateData(tempTimes, tempEnergyValues, maxPoints);
         const decimatedMoney = this.decimateData(tempTimes, tempMoneyValues, maxPoints);
-        
+
         // Create completely new objects for the chart data to avoid reactivity issues
         this.CurrentData = {
           labels: [...decimatedCurrent.timestamps],
@@ -1256,7 +1279,7 @@ export default {
             fill: true
           }]
         };
-        
+
         this.PowerData = {
           labels: [...decimatedPower.timestamps],
           datasets: [{
@@ -1268,7 +1291,7 @@ export default {
             fill: true
           }]
         };
-        
+
         this.EnergyData = {
           labels: [...decimatedEnergy.timestamps],
           datasets: [{
@@ -1280,7 +1303,7 @@ export default {
             fill: true
           }]
         };
-        
+
         this.MoneyData = {
           labels: [...decimatedMoney.timestamps],
           datasets: [{
@@ -1292,6 +1315,26 @@ export default {
             fill: true
           }]
         };
+
+        // Fetch anomalies
+        const encodedId = encodeURIComponent(this.macaddress);
+        const anomaliesUrl = `http://51.44.178.184:5501/anomalies/${encodedId}?startTime=${selectedDate[0]}&endTime=${selectedDate[1]}`;
+
+        try {
+          const anomaliesResponse = await fetch(anomaliesUrl);
+          if (anomaliesResponse.ok) {
+            const rawAnomalies = await anomaliesResponse.json();
+            // Apply the 5-minute filtering
+            this.anomalies = this.filterAnomaliesByTime(rawAnomalies);
+            console.log(`Loaded ${rawAnomalies.length} anomalies, filtered to ${this.anomalies.length}`);
+          } else {
+            console.log(`Anomalies API response status: ${anomaliesResponse.status}`);
+            this.anomalies = [];
+          }
+        } catch (error) {
+          console.error("Error fetching anomalies:", error.message);
+          this.anomalies = [];
+        }
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -1299,7 +1342,7 @@ export default {
         this.isLoading = false;
       }
     },
-    
+
     async onDateChange(newDate) {
       const timeUnit = this.getTimeUnit(newDate[0] * 1000, newDate[1] * 1000);
 
@@ -1322,7 +1365,7 @@ export default {
           }
         }
       };
-      
+
       this.EnergyOptions = {
         ...this.EnergyOptions,
         scales: {
@@ -1344,14 +1387,14 @@ export default {
 
       await this.fetchDataAndLoadCharts(newDate);
     },
-    
+
     resetZoom() {
       try {
         const currentChartInstance = this.$refs.currentChart?.getChartInstance();
         const powerChartInstance = this.$refs.powerChart?.getChartInstance();
         const energyChartInstance = this.$refs.energyChart?.getChartInstance();
         const moneyChartInstance = this.$refs.moneyChart?.getChartInstance();
-        
+
         if (currentChartInstance && currentChartInstance.resetZoom) currentChartInstance.resetZoom();
         if (powerChartInstance && powerChartInstance.resetZoom) powerChartInstance.resetZoom();
         if (energyChartInstance && energyChartInstance.resetZoom) energyChartInstance.resetZoom();
@@ -1364,7 +1407,17 @@ export default {
       const currentEpochTime = Math.floor(Date.now() / 1000);
       const selectedDate = [currentEpochTime - 86400, currentEpochTime];
       this.fetchDataAndLoadCharts(selectedDate);
-    }
+    },
+    formatAnomalyTime(timestamp) {
+      const date = new Date(timestamp * 1000);
+      return date.toLocaleString('en-GB', {
+        day: '2-digit',
+        month: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      });
+    },
   },
   created() {
     // Check for macaddress in URL on initial load
@@ -1473,14 +1526,15 @@ body {
 /* Mobile responsiveness */
 @media (max-width: 768px) {
   .reset-zoom-button {
-    display: none; /* Hide reset zoom button on mobile */
+    display: none;
+    /* Hide reset zoom button on mobile */
   }
-  
+
   .chart-wrapper {
     height: 300px;
     padding: 15px;
   }
-  
+
   .container {
     padding: 10px;
   }
@@ -1491,7 +1545,7 @@ body {
     height: 250px;
     padding: 10px;
   }
-  
+
   .chart-wrapper h2 {
     font-size: 16px;
     margin-bottom: 10px;
@@ -1530,7 +1584,9 @@ body {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .action-buttons {
@@ -1543,7 +1599,8 @@ body {
 
 .realtime-button {
   background-color: #e94560;
-  color: #fff !important; /* Override any default link color */
+  color: #fff !important;
+  /* Override any default link color */
   border: none;
   padding: 12px 24px;
   border-radius: 6px;
@@ -1602,11 +1659,82 @@ body {
     padding: 10px;
     font-size: 14px;
   }
+
   .cost-analysis-button {
     width: 100%;
     justify-content: center;
     padding: 10px;
     font-size: 14px;
+  }
+}
+
+/* Anomalies styles */
+.anomalies-container {
+  background-color: #0f3460;
+  border-radius: 12px;
+  padding: 15px 20px;
+  margin-bottom: 25px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.anomalies-container h2 {
+  color: #e94560;
+  font-size: 1.4rem;
+  margin-bottom: 15px;
+  text-align: center;
+}
+
+.anomalies-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.anomaly-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: rgba(233, 69, 96, 0.1);
+  border-left: 3px solid #e94560;
+  padding: 10px 15px;
+  border-radius: 6px;
+}
+
+.anomaly-time {
+  color: #aaa;
+  font-size: 0.9rem;
+}
+
+.anomaly-info {
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.anomaly-info i {
+  color: #e94560;
+}
+
+@media (max-width: 768px) {
+  .anomalies-container {
+    padding: 12px;
+  }
+
+  .anomaly-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+  }
+
+  .anomaly-time {
+    font-size: 0.8rem;
+  }
+
+  .anomaly-info {
+    font-size: 0.9rem;
   }
 }
 </style>
